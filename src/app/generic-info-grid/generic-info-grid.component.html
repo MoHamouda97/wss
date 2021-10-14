@@ -1,0 +1,33 @@
+<div class="card">
+    <div class="table-responsive">
+        <table class="table">
+            <thead>                
+                <tr class="bg-light text-center"> 
+                  <th *ngFor="let header of header">
+                      {{header}}
+                  </th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr *ngFor="let allData of data; let i = index" class="text-center">
+                    <td *ngFor="let key of allData | render" >{{allData[key]}}</td>                
+                </tr>
+            </tbody>            
+        </table>           
+    </div>
+    <div class="page" *ngIf="pageORload == 'page'">
+        <!--<ngb-pagination 
+            *ngIf="(PageSize < totalCount) && data.length > 0"
+            [collectionSize]="totalCount" 
+            [(page)]="page" 
+            [boundaryLinks]="true"
+            [maxSize]="5" 
+            [rotate]="true" 
+            [ellipses]="true"
+            [pageSize]="PageSize"
+            (pageChange)="onPageChange($event)"></ngb-pagination>-->
+    </div>
+    <div class="loadmore" *ngIf="pageORload != 'page'">
+        <button class="btn btn-primary" (click)="loadMore()">Load More</button>
+    </div>
+</div>

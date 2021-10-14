@@ -1,0 +1,48 @@
+<div class="map-search">
+    <input type="text" placeholder="Find places on map" nz-input #search (keyup)="searchMap(search.value)" /> 
+</div>
+
+<div class="map">
+    <agm-map 
+        [latitude]="lat"
+        [longitude]="lng"
+        [zoom]="zoom"
+        [agmDrawingManager]="drawing"
+        (mapReady)="mapReadyHandler($event)">
+        <agm-marker
+            *ngFor="let m of markers; let i = index"
+            (markerClick)="clickedMarker(m.label, i)"
+            [latitude]="m.lat"
+            [longitude]="m.lng"
+            [label]="m.label"
+            [markerDraggable]="m.draggable"
+            (dragEnd)="markerDragEnd(m, $event)">
+            <agm-info-window>
+                <div class="text-center">
+                    <p>Add Content Here !!</p>
+                    <button (click)="removeMarker(i)" matRipple class="btn btn-danger">
+                        Remove Marker
+                    </button>
+                </div>
+            </agm-info-window>
+        </agm-marker>
+        
+        <!--<agm-polyline [clickable]="true" [latitude]="lat + 0.3" [longitude]="lng"></agm-polyline>-->
+        
+        <!--<agm-circle [latitude]="lat + 0.3" [longitude]="lng" 
+            [radius]="5000"
+            [fillColor]="'red'"
+            [circleDraggable]="true"
+            [editable]="true">
+        </agm-circle>-->      
+    </agm-map>
+    <agm-drawing-manager 
+        #drawing="agmDrawingManager" 
+        (polylineComplete)="test($event)"
+        [drawingControl]="true"
+        [polylineOptions]="polylineOptions"
+        [drawingControlOptions]="drawingControlOptions"></agm-drawing-manager>
+</div>
+
+<div id="map" style="height: 300px;"></div>
+

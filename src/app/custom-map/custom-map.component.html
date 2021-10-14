@@ -1,0 +1,10 @@
+<div class="map-search">
+    <input 
+        type="text" 
+        placeholder="Find places on map" 
+        nz-input 
+        #search  
+        (keyup)="searchMap(search.value)"/> 
+</div>
+
+<div id="map" style="height: 300px;"></div>

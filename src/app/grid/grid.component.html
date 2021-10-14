@@ -1,0 +1,98 @@
+<form nz-form [formGroup]="gridForm" (keydown.enter)="$event.preventDefault()">                   
+    <div class="card">
+        <div class="table-responsive">
+            <nz-table 
+                [nzLoading]="tblLoading"
+                class="table forms-table table-striped table-bordered">
+                <thead>
+                    <tr class="bg-light">
+                        <th *ngFor="let head of header">{{head}}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let control of listOfControl; let i = index">
+                        <td style="width: 250px;">
+                            <nz-select
+                                nzId="nameWithAttribute-{{i}}"
+                                [nzAutoFocus]="listOfControl.length - 1 === i"
+                                nzAllowClear
+                                nzPlaceHolder="ابحث عن سلعة او خدمة"                                
+                                nzShowSearch
+                                nzServerSearch
+                                [formControlName]="control['nameWithAttribute']"
+                                (nzOnSearch)="searchGoods($event, i)"
+                                (ngModelChange)="getItemUnit($event, i)"
+                            >
+                                <ng-container *ngFor="let item of itemsList[i]">
+                                    <nz-option 
+                                        *ngIf="!isLoading" 
+                                        [nzValue]="item.nameWithAttribute" 
+                                        [nzLabel]="item.nameWithAttribute"></nz-option>
+                                </ng-container>
+                                <nz-option *ngIf="isLoading" nzDisabled nzCustomContent>
+                                    <i nz-icon nzType="loading" style="position: relative; top: -2px" class="loading-icon"></i>
+                                    جار استرجاع البيانات ...
+                                </nz-option>
+                            </nz-select> 
+                        </td>
+                        <td style="width: 200px;">
+                            <nz-select                                
+                                nzPlaceHolder="الوحدة"
+                                [formControlName]="control['unitName']"
+                                (ngModelChange)="getUnit($event, i)"
+                                >
+                                <ng-container *ngFor="let unit of unitList[i]" >
+                                        <nz-option                                             
+                                            [nzValue]="unit.unitName" 
+                                            [nzLabel]="unit.unitName"></nz-option>                                        
+                                </ng-container>                                
+                            </nz-select> 
+                        </td>
+                        <td>
+                            <input 
+                                nz-input 
+                                type="number" 
+                                min="0" 
+                                [formControlName]="control['retailPrice']"
+                                (change)="calcPrice(i)"
+                                (keyup)="calcPrice(i)" />
+                        </td>
+                        <td>
+                            <input 
+                                nz-input 
+                                type="number" 
+                                min="0" 
+                                [formControlName]="control['numberOfSmallUint']"
+                                id="quantity-{{i}}"
+                                (keyup.enter)="addRow()"
+                                (change)="calcPrice(i)"
+                                (keyup)="calcPrice(i)" />
+                        </td>
+                        <td>
+                            <input 
+                                nz-input 
+                                type="number" 
+                                min="0" 
+                                [formControlName]="control['price']"                                
+                                readonly/>
+                        </td>
+                        <td>
+                            <button 
+                                nz-button  
+                                nzDanger 
+                                nzShape="circle" 
+                                (click)="removeField(control, $event)"
+                                (keyup.tab)="addRow()">
+                                <i 
+                                    nz-icon 
+                                    nzType="delete" 
+                                    nzTheme="outline" 
+                                    style="position: relative; top: -4px;"></i>
+                            </button>
+                        </td>
+                    </tr>
+                </tbody>
+            </nz-table>
+        </div>
+    </div>
+</form>

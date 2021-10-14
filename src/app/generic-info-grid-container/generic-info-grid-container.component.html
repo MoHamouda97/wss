@@ -1,0 +1,8 @@
+<app-generic-info-grid 
+    [header]="header"
+    [data]="data"
+    [PageSize]="'0'"
+    [totalCount]="'0'"
+    [pageORload]="'page'"
+    (paging)="testPage($event)"
+    (isLoadMore)="testLoadMore()"></app-generic-info-grid>

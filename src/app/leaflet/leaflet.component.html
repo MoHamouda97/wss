@@ -1,0 +1,17 @@
+<div class="map-container" style="position: relative;">
+    <div id="map" style="height: 350px;"></div>
+    <div class="map-options" style="position: absolute; bottom: 0; z-index: 99999;">
+        <button 
+            matRipple 
+            nz-button 
+            nzType="default" 
+            style="margin: 5px;"
+            (click)="removeDrawFreePolylineListener()">Reset</button>
+        <button 
+            matRipple 
+            nz-button 
+            nzType="default" 
+            style="margin: 5px;" 
+            (click)="startDrawFreePolyline()">Draw</button>
+    </div>
+</div>

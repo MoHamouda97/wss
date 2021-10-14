@@ -1,0 +1,131 @@
+<form [formGroup]="gridForm">
+    <div class="card">
+        <div class="table-responsive">
+            <nz-table 
+                [nzLoading]="tblLoading"
+                class="table forms-table table-striped table-bordered">
+                <thead>
+                    <tr class="bg-light">
+                        <ng-container *ngFor="let head of tblInfo['tbltHeader']; let i = index">
+                            <th [class.d-none]="tblInfo['isHide'][1][i]">{{head}}</th>                          
+                        </ng-container>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- start add form array name -->
+                    <ng-container formArrayName="controls">
+
+                        <!-- start looping throw controls in form array -->
+                        <ng-container *ngFor="let control of getControls.controls; let i = index">
+
+                            <!-- start index of form array-->
+                            <ng-container [formGroupName]="i">
+
+                                <!-- start looping throw controls type -->
+                                <tr *ngFor="let controls of tblInfo['tblControls']" class="text-center">
+                                    <ng-container *ngFor="let control of controls | render">
+                                        <ng-container [ngSwitch]="controls[control]">
+                                            <!-- start input => text -->
+                                            <td 
+                                                *ngSwitchCase="'text'" 
+                                                [class.d-none]="tblInfo['isHide'][0][control]">
+                                                <input nz-input type="text" [formControlName]="control"   />
+                                            </td>
+                                            <!-- end input => text -->
+                    
+                                            <!-- start input => email -->
+                                            <td 
+                                                *ngSwitchCase="'email'" 
+                                                [class.d-none]="tblInfo['isHide'][0][control]">
+                                                <input nz-input type="email" [formControlName]="control"  />
+                                            </td>
+                                            <!-- end input => email -->
+                    
+                                            <!-- start input => number -->
+                                            <td 
+                                                *ngSwitchCase="'number'" 
+                                                [class.d-none]="tblInfo['isHide'][0][control]">
+                                                <input nz-input type="number" [formControlName]="control"  />
+                                            </td>
+                                            <!-- end input => number -->
+
+                                            <!-- start input => select -->
+                                            <td 
+                                                *ngSwitchCase="'select'" 
+                                                [class.d-none]="tblInfo['isHide'][0][control]">
+                                                <nz-select                                
+                                                    nzPlaceHolder="Select value"
+                                                    [formControlName]="control"
+                                                    (ngModelChange)="isCascading($event, control, i)"                                                    
+                                                    >
+                                                    <ng-container *ngFor="let data of selectData[i][control]" >
+                                                            <nz-option                                             
+                                                                [nzValue]="data.id" 
+                                                                [nzLabel]="data.name"></nz-option>                                        
+                                                    </ng-container>                              
+                                                </nz-select>                                                 
+                                            </td>
+                                            <!-- end input => select --> 
+                                            
+                                            <!-- start input => checkbox -->
+                                            <td 
+                                                *ngSwitchCase="'checkbox'" 
+                                                [class.d-none]="tblInfo['isHide'][0][control]">
+                                                <label 
+                                                    nz-checkbox 
+                                                    [formControlName]="control">Checkbox</label> 
+                                            </td>
+                                            <!-- end input => checkbox -->   
+                                            
+                                            <!-- start input => radio -->
+                                            <td 
+                                                *ngSwitchCase="'radio'" 
+                                                [class.d-none]="tblInfo['isHide'][0][control]">
+                                                <label 
+                                                    nz-radio
+                                                    [formControlName]="control">Radio</label> 
+                                            </td>
+                                            <!-- end input => radio -->    
+                                            
+                                            <!-- start input => date -->
+                                            <td 
+                                                *ngSwitchCase="'date'" 
+                                                [class.d-none]="tblInfo['isHide'][0][control]">
+                                                <nz-date-picker [formControlName]="control"></nz-date-picker>
+                                            </td>
+                                            <!-- end input => date -->                                               
+                    
+                                            <!-- start remove row -->
+                                            <td *ngSwitchCase="'remove'">
+                                                <button 
+                                                    nz-button  
+                                                    nzDanger 
+                                                    nzShape="circle"
+                                                    (click)="removeControls(i)"
+                                                    (keyup.tab)="addControls()">
+                                                    <i 
+                                                        nz-icon 
+                                                        nzType="delete" 
+                                                        nzTheme="outline" 
+                                                        style="position: relative; top: -4px;"></i>
+                                                </button>
+                                            </td>
+                                            <!-- end remove row -->
+                                        </ng-container>
+                                    </ng-container>
+                                </tr>
+                                <!-- end looping throw controls type -->
+
+                            </ng-container>
+                            <!-- end index of form array-->
+
+                        </ng-container>
+                        <!-- end looping throw controls in form array -->
+
+                    </ng-container>
+                    <!-- end add form array name -->
+                </tbody>
+            </nz-table>
+        </div>
+    </div>
+</form>
