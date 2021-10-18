@@ -22,6 +22,7 @@ import { FullPageComponent } from './full-page/full-page.component';
 import { RouterModule } from '@angular/router';
 import { NgxCaptchaModule } from '@binssoft/ngx-captcha';
 import { CaptchModuel } from 'src/modules/captcha.module';
+import { LeafletService } from 'src/services/leaflet/leaflet.service';
 
 registerLocaleData(en);
 
@@ -42,7 +43,8 @@ registerLocaleData(en);
   providers: [
     { provide: NZ_I18N, useValue: en_US },    
     ItemsService,
-    BranchesService
+    BranchesService,
+    LeafletService
   ],
   bootstrap: [AppComponent],
 })

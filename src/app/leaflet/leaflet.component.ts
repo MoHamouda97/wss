@@ -1,17 +1,39 @@
 import { Component, OnInit } from '@angular/core';
 import * as L from 'leaflet';
 import Geocoder from 'leaflet-control-geocoder';
+import { LeafletService } from 'src/services/leaflet/leaflet.service';
 
 //#region // props & functions needed to deal wit listeners by ref
 let map: any;
 let marker: any;
 let latlngs: any[] = [];
-let polyline: any = {};
+let recLatLngs: any[] = [];
+let circleLatLngs: any = [];
+let polygonLatLngs: any = [];
 let isDrawing: boolean = false;
+let isDrawingRec: boolean = false;
+let isDrawingCircle: boolean = false;
+let isDrawingPolygon: boolean = false;
+let isAddMarker: boolean = true;
 
 function drawPolyline(e: any) {
   latlngs.push([e.latlng.lat, e.latlng.lng]);
-  polyline = L.polyline(latlngs, {color: 'black'}).addTo(map);
+  L.polyline(latlngs, {color: '#26abe4'}).addTo(map);
+}
+
+function drawRectangle(e: any) {
+  recLatLngs.push([e.latlng.lat, e.latlng.lng]);
+  L.rectangle(recLatLngs, {color: '#26abe4'}).addTo(map);
+}
+
+function drawCircle(e: any) {
+  circleLatLngs.push([e.latlng.lat, e.latlng.lng]);
+  L.circle([e.latlng.lat, e.latlng.lng], {radius: 50000}).addTo(map);
+}
+
+function drawPolygon(e: any) {
+  polygonLatLngs.push([e.latlng.lat, e.latlng.lng]);
+  L.polygon(polygonLatLngs, {color: '#26abe4'}).addTo(map);
 }
 
 function createMarker(center: any) {
@@ -22,7 +44,10 @@ function createMarker(center: any) {
   
   removeMarker()
   
-  marker = L.marker(center, { icon: icon })
+  marker = L.marker(center, { 
+    icon: icon,
+    draggable: true
+  })
   
   map.addLayer(marker);
 }
@@ -38,8 +63,19 @@ function removeMarker() {
   styleUrls: ['./leaflet.component.css']
 })
 export class LeafletComponent implements OnInit {
+  mapStyles: any[] = [
+    {name: 'Default', url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'},
+    {name: 'Dark', url: 'https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png'},
+    {name: 'Cycl OSM', url: 'https://{s}.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png'},
+    {name: 'Cycle Map', url: 'https://{s}.tile.thunderforest.com/cycle/{z}/{x}/{y}.png?apikey={apikey}'},
+  ];
+
+  stopPolyline: boolean = false;
+  stopRec: boolean = false;
+  stopPolygon: boolean = false;
+  stopCircle: boolean = false;
   
-  constructor() { }
+  constructor(private service: LeafletService) { }
 
   ngOnInit(): void {
     this.createMap([ 30.7865, 31.0004 ]);
@@ -53,12 +89,7 @@ export class LeafletComponent implements OnInit {
       zoom: 7
     }); 
     
-    const tiles = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 18,
-      minZoom: 3,
-    });
-    
-    tiles.addTo(map);  
+    this.changeMapStyle(this.mapStyles[0]?.url)
 
     createMarker(center)
     
@@ -68,22 +99,21 @@ export class LeafletComponent implements OnInit {
 
   //#region // marker listeners
   addMarkerListener() {
-    L.DomEvent.addListener(map, 'click', this.mapClicked)
+    L.DomEvent.addListener(map, 'click', (e: any) => {
+      if (isAddMarker) {
+        createMarker([e.latlng.lat, e.latlng.lng]);
+        this.getAddress(e.latlng.lat, e.latlng.lng);
+      }
+    });
   }
 
-  removeMarkerListener() {
-    L.DomEvent.removeListener(map, 'click', this.mapClicked)
+  freezMarkerListener() {
+    isAddMarker = false;
   }
   //#endregion
 
-  //#region // when user click on map
-  mapClicked(e: any) {
-    createMarker([e.latlng.lat, e.latlng.lng])
-  }
-  //#endregion
-
-  //#region // geocoder (search)
-  geoCoder() {
+  //#region // geocoder
+  geoCoder() { // search the map
     const geocoder = new Geocoder({ defaultMarkGeocode: false });
 
     geocoder.addTo(map);
@@ -93,42 +123,163 @@ export class LeafletComponent implements OnInit {
       createMarker([center.lat, center.lng])
     });    
   }
+
+  async getAddress(lat: number, lng: number) { // get address by lat, lng
+    const location = await this.service.gatAddress(lat, lng).toPromise();
+    console.log(location)
+  }  
   //#endregion
 
   //#region // drow polyline events
   startDrawFreePolyline() {
     removeMarker()
 
-    this.removeMarkerListener();
+    this.freezMarkerListener();
      
     L.DomUtil.addClass(map._container,'crosshair-cursor-enabled');
 
-    L.DomEvent.addListener(map, 'click', this.addDrawFreePolylineListener)
+    L.DomEvent.addListener(map, 'click', this.addDrawFreePolylineListener);
+
+    L.DomEvent.removeListener(map, 'click', drawRectangle);
+    L.DomEvent.removeListener(map, 'click', drawCircle);
+    L.DomEvent.removeListener(map, 'click', drawPolygon);
   }
 
   addDrawFreePolylineListener() {
     isDrawing = !isDrawing;
+    isAddMarker = false;
 
     if (isDrawing) {
       L.DomEvent.addListener(map, 'mousemove', drawPolyline)
     } else {
       L.DomUtil.removeClass(map._container,'crosshair-cursor-enabled');
       L.DomEvent.removeListener(map, 'mousemove', drawPolyline);
-      console.log(latlngs)
     }
   }
 
-  removeDrawFreePolylineListener() {
+  //#endregion
+
+  //#region // draw rectangle
+  startDrawRectangle() {
+    removeMarker()
+
+    this.freezMarkerListener();
+     
+    L.DomUtil.addClass(map._container,'crosshair-cursor-enabled');
+
+    this.addDrawRectangleListener()
+
+    L.DomEvent.removeListener(map, 'click', this.addDrawFreePolylineListener);
+    L.DomEvent.removeListener(map, 'click', drawCircle);
+    L.DomEvent.removeListener(map, 'click', drawPolygon);
+  }
+
+
+  addDrawRectangleListener() {
+    isDrawingRec = !isDrawingRec;
+    isAddMarker = false;
+
+    if (isDrawingRec) {
+      L.DomEvent.addListener(map, 'click', drawRectangle)
+    } else {
+      L.DomUtil.removeClass(map._container,'crosshair-cursor-enabled');
+      L.DomEvent.removeListener(map, 'click', drawRectangle);
+    }
+  }  
+  //#endregion
+
+  //#region // draw circle
+  startDrawCircle() {
+    removeMarker()
+
+    this.freezMarkerListener();
+     
+    L.DomUtil.addClass(map._container,'crosshair-cursor-enabled');
+
+    this.addDrawCircleListener();
+
+    L.DomEvent.removeListener(map, 'click', this.addDrawFreePolylineListener);
+    L.DomEvent.removeListener(map, 'click', drawRectangle);
+    L.DomEvent.removeListener(map, 'click', drawPolygon);
+  }
+
+  addDrawCircleListener() {
+    isDrawingCircle = !isDrawingCircle;
+    isAddMarker = false;
+
+    if (isDrawingCircle) {
+      L.DomEvent.addListener(map, 'click', drawCircle)
+    } else {
+      L.DomUtil.removeClass(map._container,'crosshair-cursor-enabled');
+      L.DomEvent.removeListener(map, 'click', drawCircle);
+    }
+  }  
+  //#endregion
+
+  //#region // draw polygon
+  startDrawPolygon() {
+    removeMarker()
+
+    this.freezMarkerListener();
+     
+    L.DomUtil.addClass(map._container,'crosshair-cursor-enabled');
+
+    this.addDrawPolygonListener()
+
+    L.DomEvent.removeListener(map, 'click', this.addDrawFreePolylineListener);
+    L.DomEvent.removeListener(map, 'click', drawRectangle);
+    L.DomEvent.removeListener(map, 'click', drawCircle);
+  }
+
+  addDrawPolygonListener() {
+    isDrawingPolygon = !isDrawingPolygon;
+    isAddMarker = false;
+
+    if (isDrawingPolygon) {
+      L.DomEvent.addListener(map, 'click', drawPolygon)
+    } else {
+      L.DomUtil.removeClass(map._container,'crosshair-cursor-enabled');
+      L.DomEvent.removeListener(map, 'click', drawPolygon);
+    }
+  }  
+  //#endregion
+
+  //#region // remove shapes
+  removeShapes() {
     removeMarker();
 
     for(const i in map._layers) (Boolean(map._layers[i]._path)) && map.removeLayer(map._layers[i]);
     
     latlngs = [];
+    recLatLngs = [];
+    circleLatLngs = [];
+    polygonLatLngs = [];
+
+    isDrawing = false;
+    isDrawingRec = false;
+    isDrawingCircle = false;
+    isDrawingPolygon = false;
+    isAddMarker = true;
 
     L.DomEvent.removeListener(map, 'click', this.addDrawFreePolylineListener);
+    L.DomEvent.removeListener(map, 'click', this.addDrawRectangleListener);
+    L.DomEvent.removeListener(map, 'click', this.addDrawCircleListener);
+    L.DomEvent.removeListener(map, 'click', drawPolygon);
+    L.DomUtil.removeClass(map._container,'crosshair-cursor-enabled');
 
     this.addMarkerListener();
+
   }  
   //#endregion
 
+  //#region // change map style
+  changeMapStyle(style: any) {
+    const tiles = L.tileLayer(style, {
+      maxZoom: 18,
+      minZoom: 3,
+    });
+    
+    tiles.addTo(map); 
+  }
+  //#endregion
 }

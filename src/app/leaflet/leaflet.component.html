@@ -1,17 +1,43 @@
 <div class="map-container" style="position: relative;">
     <div id="map" style="height: 350px;"></div>
-    <div class="map-options" style="position: absolute; bottom: 0; z-index: 99999;">
+    <div class="map-draw-tools" style="position: absolute; bottom: 0; z-index: 99999;">
         <button 
             matRipple 
             nz-button 
             nzType="default" 
             style="margin: 5px;"
-            (click)="removeDrawFreePolylineListener()">Reset</button>
+            (click)="removeShapes()">Reset</button>
         <button 
             matRipple 
             nz-button 
             nzType="default" 
             style="margin: 5px;" 
-            (click)="startDrawFreePolyline()">Draw</button>
+            (click)="startDrawFreePolyline()">Free Line</button>
+        <button 
+            matRipple 
+            nz-button 
+            nzType="default" 
+            style="margin: 5px;" 
+            (click)="startDrawRectangle()">Rectangle</button>
+        <button 
+            matRipple 
+            nz-button 
+            nzType="default" 
+            style="margin: 5px;" 
+            (click)="startDrawCircle()">Circle</button>
+        <button 
+            matRipple 
+            nz-button 
+            nzType="default" 
+            style="margin: 5px;" 
+            (click)="startDrawPolygon()">Polygon</button>
+    </div>
+    <div class="map-style" style="position: absolute; top: 50px; z-index: 999; width: 90px; margin-right: 11px;">
+        <nz-select (ngModelChange)="changeMapStyle($event)" [ngModel]="mapStyles[0].url">
+            <nz-option 
+                *ngFor="let style of mapStyles" 
+                [nzValue]="style.url" 
+                [nzLabel]="style.name"></nz-option>
+        </nz-select>      
     </div>
 </div>
