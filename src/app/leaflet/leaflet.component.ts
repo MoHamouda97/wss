@@ -64,10 +64,10 @@ function removeMarker() {
 })
 export class LeafletComponent implements OnInit {
   mapStyles: any[] = [
-    {name: 'Default', url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'},
-    {name: 'Dark', url: 'https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png'},
-    {name: 'Cycl OSM', url: 'https://{s}.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png'},
-    {name: 'Cycle Map', url: 'https://{s}.tile.thunderforest.com/cycle/{z}/{x}/{y}.png?apikey={apikey}'},
+    {name: 'Streets', url: 'http://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}'},
+    {name: 'Hybrid', url: 'http://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}'},
+    {name: 'Satellite', url: 'http://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}'},
+    {name: 'Terrain', url: 'http://{s}.google.com/vt/lyrs=p&x={x}&y={y}&z={z}'},
   ];
 
   stopPolyline: boolean = false;
@@ -103,12 +103,14 @@ export class LeafletComponent implements OnInit {
       if (isAddMarker) {
         createMarker([e.latlng.lat, e.latlng.lng]);
         this.getAddress(e.latlng.lat, e.latlng.lng);
+        console.log(recLatLngs)
       }
     });
   }
 
   freezMarkerListener() {
     isAddMarker = false;
+    L.DomEvent.removeListener(map, 'click', this.addMarkerListener)
   }
   //#endregion
 
@@ -262,13 +264,10 @@ export class LeafletComponent implements OnInit {
     isAddMarker = true;
 
     L.DomEvent.removeListener(map, 'click', this.addDrawFreePolylineListener);
-    L.DomEvent.removeListener(map, 'click', this.addDrawRectangleListener);
-    L.DomEvent.removeListener(map, 'click', this.addDrawCircleListener);
+    L.DomEvent.removeListener(map, 'click', drawRectangle);
+    L.DomEvent.removeListener(map, 'click', drawCircle);
     L.DomEvent.removeListener(map, 'click', drawPolygon);
     L.DomUtil.removeClass(map._container,'crosshair-cursor-enabled');
-
-    this.addMarkerListener();
-
   }  
   //#endregion
 
@@ -277,6 +276,7 @@ export class LeafletComponent implements OnInit {
     const tiles = L.tileLayer(style, {
       maxZoom: 18,
       minZoom: 3,
+      subdomains: ['mt0','mt1','mt2','mt3']
     });
     
     tiles.addTo(map); 

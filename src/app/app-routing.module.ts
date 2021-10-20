@@ -33,6 +33,10 @@ export const routes: Routes = [
       {
         path: 'leaflet',
         loadChildren: () => import('./leaflet/leaflet.module').then(m => m.LeafletModule)
+      },
+      {
+        path: 'generic-tbl',
+        loadChildren: () => import('./generic-tbl-container/generic-tbl-container.module').then(m => m.GenericTblContainerModule)
       }
     ]
   }

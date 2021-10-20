@@ -1,0 +1,133 @@
+<form [formGroup]="gridForm">
+    <div class="card">
+        <div class="table-responsive">
+            <nz-table 
+                class="table forms-table table-striped table-bordered">
+                <thead>
+                    <tr class="bg-light">
+                        <!-- start display tbl header -->
+                        <ng-container *ngFor="let head of tblHeader; let i = index">
+                            <th>{{head}}</th>                          
+                        </ng-container>
+                        <!-- end display tbl header -->
+                    </tr>
+                </thead>
+                <tbody>
+               
+                    <!-- start add form array name -->
+                    <ng-container formArrayName="controls">
+
+                        <!-- start looping throw controls in form array -->
+                        <ng-container *ngFor="let control of getControls.controls; let i = index">
+
+                            <!-- start index of form array-->
+                            <ng-container [formGroupName]="i">
+
+                                <!-- start adding -->
+                                <ng-container *ngIf="i == 0">
+                                    <tr class="text-center">
+                                        <!-- start controls -->  
+                                            <ng-container *ngFor="let key of data[i] | render; let in = index">
+                                                <td *ngIf="key != 'id'">
+                                                    <input 
+                                                        nz-input 
+                                                        type="text" 
+                                                        [placeholder]="placeholders[in]"
+                                                        [(ngModel)]="ItemObj[key]"
+                                                        [ngModelOptions]="{standalone: true}" />
+                                                </td> 
+                                            </ng-container>
+
+                                            <!-- start display actions btn -->
+                                            <td>
+                                                <button             
+                                                    matRipple 
+                                                    nz-button 
+                                                    nzType="default" 
+                                                    (click)="addItem()">Add New</button>
+                                            </td> 
+                                            <!-- end display actions btn -->                                               
+                                        <!-- end controls -->  
+                                    </tr>
+                                </ng-container>
+                                <!-- end adding -->                                
+
+                                <!-- start looping throw data -->
+                                <tr class="text-center">
+
+                                    <!-- start display data -->
+                                    <ng-container *ngFor="let key of data[i] | render; let in = index">
+                                        <!-- start if visability is false -->
+                                        <ng-container *ngIf="!visabilities[i]">
+                                            <td *ngIf="key != 'id'">
+                                                {{data[i][key]}}
+                                            </td> 
+                                        </ng-container>                                        
+                                        <!-- start if visability is false -->
+
+                                        <!-- start if visability is true -->
+                                        <ng-container *ngIf="visabilities[i]">
+                                            <td *ngIf="key != 'id'">
+                                                <input 
+                                                    nz-input 
+                                                    type="text" 
+                                                    [placeholder]="placeholders[in]"
+                                                    [formControlName]="key"   />
+                                            </td> 
+                                        </ng-container>                                        
+                                        <!-- start if visability is true -->
+                                    </ng-container>
+                                    <!-- end display data -->
+
+                                    <!-- start display actions btn -->
+                                    <td>
+                                        <!-- start if visability is false -->
+                                        <ng-container *ngIf="!visabilities[i]">
+                                            <button             
+                                                matRipple 
+                                                nz-button 
+                                                nzType="default" 
+                                                (click)="visabilities[i] = true">Update</button>
+
+                                            <button             
+                                                matRipple 
+                                                nz-button 
+                                                nzType="default" 
+                                                (click)="removeItem(i)">Delete</button>
+                                        </ng-container>
+                                        <!-- start if visability is false -->
+
+                                        <!-- start if visability is true -->
+                                        <ng-container *ngIf="visabilities[i]">
+                                            <button             
+                                                matRipple 
+                                                nz-button 
+                                                nzType="default" 
+                                                (click)="confirmUpdate(i)">Confirm</button>
+
+                                            <button             
+                                                matRipple 
+                                                nz-button 
+                                                nzType="default" 
+                                                (click)="backToGrid(i)">Back</button>
+                                        </ng-container>
+                                        <!-- start if visability is false -->
+                                    </td> 
+                                    <!-- end display actions btn -->                                     
+
+                                </tr>
+                                <!-- end looping throw data -->     
+
+                            </ng-container>
+                            <!-- end index of form array-->
+
+                        </ng-container>
+                        <!-- end looping throw controls in form array -->
+
+                    </ng-container>
+                    <!-- end add form array name -->
+                </tbody>
+            </nz-table>
+        </div>
+    </div>
+</form>

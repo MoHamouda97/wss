@@ -85,8 +85,6 @@ export class CustomMapComponent implements OnInit {
       location
     ];
 
-    console.log(location)
-
     this.drawMarker();
   }
 
