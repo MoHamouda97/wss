@@ -1,9 +1,54 @@
 import { Component, NgZone, OnInit } from '@angular/core';
 
 let map: google.maps.Map;
-let drawMap: google.maps.Polyline;
-let markers: any[] = [];
+
+let markers: google.maps.Marker[] = [];
+let isAddMarker: boolean = true;
+
+let drawingManager = new google.maps.drawing.DrawingManager();
+let isDrawing: boolean = false;
+let polylineListener: any;
+let polyline: any;
+let polylineMove: any;
 let destination: any;
+let overlays: any[] = [];
+
+//#region // drawing
+function drawPolyline(e: any) {
+  polyline.getPath().push(e.latLng);
+}
+//#endregion
+
+//#region // marker actions
+function createMarker(center: google.maps.LatLng | google.maps.LatLngLiteral) {    
+  const marker = new google.maps.Marker({
+    position: center,
+    map,
+  });
+
+  const index = markers.length
+
+  markers.push(marker)
+
+  marker.addListener('click', (e) => {
+    removeMarker(index)
+  })
+
+}
+
+function removeAllMarkers(map: google.maps.Map | null) {
+  if (Boolean(markers)) {
+    for (let i = 0; i < markers.length; i++) {
+      markers[i].setMap(map);
+    }    
+    markers = [];
+  }
+}
+
+function removeMarker(index: number) {
+  markers.forEach((val, i) => (i == index) && markers[i].setMap(null));
+}
+//#endregion
 
 @Component({
   selector: 'app-custom-map',
@@ -16,87 +61,22 @@ export class CustomMapComponent implements OnInit {
 
   ngOnInit(): void {
     this.initMap({lat: 30.7865, lng: 31.0004});
+    this.drawingManager();
   }
 
   //#region // show map
   initMap(center: any) {
-    map = new google.maps.Map(document.getElementById('map') as HTMLElement, {
+    map = new google.maps.Map(document.getElementById('g_map') as HTMLElement, {
         zoom: 8,
         center: center        
     });
 
     map.addListener('click', (e: google.maps.MouseEvent) => {
       const location = {lat: e.latLng.lat(), lng: e.latLng.lng()}
-      this.zone.run(() => this.addMarker(location))      
+      this.zone.run(() => (isAddMarker) && createMarker(location))      
     });
 
-    destination = new google.maps.MVCArray();
-    let options = { 
-      path: destination,
-      clickable: false
-    };
-    let polyline = new google.maps.Polyline(options);
-    polyline.setMap(map)
-
-    /*google.maps.event.addListener(map, 'mousemove', (e) => {
-      let currentPath = polyline.getPath();
-      currentPath.push(e.latLng)
-    })*/
-
-    let move = google.maps.event.addListener(map, 'mousemove', function(e) {
-      polyline.getPath().push(e.latLng);
-    });    
-
-    google.maps.event.addListenerOnce(map, 'mouseup', (e) => {
-      google.maps.event.removeListener(move);
-      var path = polyline.getPath();
-     /* polyline.setMap(null);
-      polyline = new google.maps.Polygon({
-        map: map,
-        paths: polyline
-      }); */     
-    })
-
-    this.addMarker(center);
-
-    //this.drawMap();
-  }
-  //#endregion
-
-  //#region // markers
-  drawMarker() {
-    markers.forEach((location, index) => {
-      const marker = new google.maps.Marker({
-        position: location,
-        map,
-        label: "M",
-      });
-
-      marker.addListener('click', () => {
-        this.removeMarker(index);        
-      })
-
-    })
-  }
-
-  addMarker(location: google.maps.LatLngLiteral) {
-    markers = [
-      ...markers,
-      location
-    ];
-
-    this.drawMarker();
-  }
-
-  removeMarker(index: number) {
-    markers.splice(index, 1);
-    this.initMap({lat: 30.7865, lng: 31.0004});
-  }  
-  //#endregion
-
-  //#region // drow on map
-  drawMap() {
-    drawMap.setMap(map)
+    createMarker(center);
   }
   //#endregion
 
@@ -115,5 +95,106 @@ export class CustomMapComponent implements OnInit {
     });
   }
   //#endregion  
+
+  //#region // drow polyline events
+  startDrawFreePolyline() {
+    isAddMarker = false;
+
+    removeAllMarkers(null);
+
+    drawingManager.setDrawingMode(null);
+
+    destination = new google.maps.MVCArray();
+
+    let options = { 
+      path: destination,
+      clickable: false
+    };
+
+    polyline = new google.maps.Polyline(options);
+    polyline.setMap(map);    
+
+    polylineListener = google.maps.event.addListener(map, 'click', this.addDrawFreePolylineListener);
+
+    map.setOptions({draggableCursor: 'crosshair'});
+  }
+
+  addDrawFreePolylineListener() {
+    isDrawing = !isDrawing;
+
+    if (isDrawing) {
+      polylineMove = google.maps.event.addListener(map, 'mousemove', drawPolyline)
+    } else {
+      google.maps.event.addListenerOnce(map, 'mousemove', (e) => {
+        google.maps.event.removeListener(polylineMove);
+        const path = polyline.getPath(); 
+      });
+      map.setOptions({draggableCursor: ''});
+    }
+  }
+  //#endregion
+
+  //#region // drawing manager
+  drawingManager() {
+    drawingManager = new google.maps.drawing.DrawingManager({
+      drawingControl: true,
+      drawingControlOptions: {
+        position: google.maps.ControlPosition.TOP_CENTER,
+        drawingModes: [
+          google.maps.drawing.OverlayType.CIRCLE,
+          google.maps.drawing.OverlayType.POLYGON,
+          google.maps.drawing.OverlayType.RECTANGLE,
+        ],
+      },
+    });
+  
+    drawingManager.setMap(map); 
+
+    google.maps.event.addListener(drawingManager, 'rectanglecomplete', this.rectangelListener);
+    google.maps.event.addListener(drawingManager, 'polygoncomplete', this.polygonListener);
+    google.maps.event.addListener(drawingManager, 'circlecomplete', this.circlelListener);
+
+    this.completeDrawingListener();
+   
+  }
+
+  rectangelListener(e: any) {
+    removeAllMarkers(null);
+    console.log(e)
+  }
+
+  polygonListener(e: any) {
+    removeAllMarkers(null);
+    console.log(e)
+  }
+
+  circlelListener(e: any) {
+    removeAllMarkers(null);
+    console.log(e)
+  }
+
+  completeDrawingListener() {
+    google.maps.event.addListener(drawingManager, 'overlaycomplete', (e) => {
+      overlays.push(e);
+     (e.type != google.maps.drawing.OverlayType.MARKER) && drawingManager.setDrawingMode(null);
+    });     
+  }
+  //#endregion
+
+  //#region // remove shapes
+  removeShapes() {
+    drawingManager.setDrawingMode(null);
+
+    google.maps.event.removeListener(polylineListener);
+    (Boolean(polyline)) && polyline.setMap(null)
+    polyline = [];
+
+    overlays.forEach((val, i) => overlays[i].overlay.setMap(null))
+
+    overlays = [];
+
+  }
+  //#endregion
+
 
 }
