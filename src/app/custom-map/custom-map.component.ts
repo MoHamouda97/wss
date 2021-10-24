@@ -1,4 +1,6 @@
+import { HttpClient } from '@angular/common/http';
 import { Component, NgZone, OnInit } from '@angular/core';
+import * as world from './../../assets/world.json';
 
 let map: google.maps.Map;
 
@@ -13,29 +15,15 @@ let polylineMove: any;
 let destination: any;
 let overlays: any[] = [];
 
+const latLangs: any = world;
+
 //#region // drawing
 function drawPolyline(e: any) {
   polyline.getPath().push(e.latLng);
 }
 //#endregion
 
-//#region // marker actions
-function createMarker(center: google.maps.LatLng | google.maps.LatLngLiteral) {    
-  const marker = new google.maps.Marker({
-    position: center,
-    map,
-  });
-
-  const index = markers.length
-
-  markers.push(marker)
-
-  marker.addListener('click', (e) => {
-    removeMarker(index)
-  })
-
-}
-
+//#region markers functions
 function removeAllMarkers(map: google.maps.Map | null) {
   if (Boolean(markers)) {
     for (let i = 0; i < markers.length; i++) {
@@ -45,8 +33,22 @@ function removeAllMarkers(map: google.maps.Map | null) {
   }
 }
 
-function removeMarker(index: number) {
-  markers.forEach((val, i) => (i == index) && markers[i].setMap(null));
+function showMarkersInside(type: string, shape: any) {
+  switch(type) {
+    case 'poly' :
+      markers.forEach(
+        (val, index) => {
+          const location: any = markers[index].getPosition();
+          (google.maps.geometry.poly.containsLocation(location, shape)) && markers[index].setVisible(true)
+        }
+      );         
+      break;
+    default :
+      markers.forEach(
+        (val, index) => (shape.getBounds().contains(markers[index].getPosition())) && markers[index].setVisible(true)
+      );
+      break;
+  }
 }
 //#endregion
 
@@ -57,26 +59,82 @@ function removeMarker(index: number) {
 })
 
 export class CustomMapComponent implements OnInit {
-  constructor(private zone: NgZone) { }
+
+  constructor(private zone: NgZone, private http: HttpClient) { }
 
   ngOnInit(): void {
-    this.initMap({lat: 30.7865, lng: 31.0004});
-    this.drawingManager();
+    const areas = latLangs.world.map((val: any) => {
+      return {
+        lat: parseFloat(val["lat"]),
+        lng: parseFloat(val["lng"])
+      }
+    });
+    
+    this.initMap(areas);
+    console.log(areas)
+    //https://raw.githubusercontent.com/lutangar/cities.json/master/cities.json
   }
 
   //#region // show map
-  initMap(center: any) {
+  initMap(center: any[]) {
     map = new google.maps.Map(document.getElementById('g_map') as HTMLElement, {
         zoom: 8,
-        center: center        
+        center: center[0]        
     });
 
     map.addListener('click', (e: google.maps.MouseEvent) => {
       const location = {lat: e.latLng.lat(), lng: e.latLng.lng()}
-      this.zone.run(() => (isAddMarker) && createMarker(location))      
+      this.zone.run(() => (isAddMarker) && this.createMarker(location, true))      
     });
 
-    createMarker(center);
+    center.forEach(val => this.createMarker(val));
+
+    this.drawingManager();
+  }
+  //#endregion
+
+  //#region // marker actions
+  createMarker(center: google.maps.LatLng | google.maps.LatLngLiteral, isShowMarker: boolean = false) {    
+    const marker: any = new google.maps.Marker({
+      position: center,
+      map,
+    });
+
+    const index = markers.length;
+
+    (isShowMarker) ? marker.setVisible(true) : marker.setVisible(false);
+
+    markers.push(marker);
+
+    marker.addListener('click', (e: any) => {
+      this.showMarkerPopup(marker)
+    })
+
+    //this.getAddress(center)
+  }
+
+  removeMarker(index: number) {
+    markers.forEach((val, i) => (i == index) && markers[i].setMap(null));
+  }
+
+  hideAllMarkers() {
+    markers.forEach((val, index) => markers[index].setVisible(false))
+  }
+
+  showMarkerPopup(marker: google.maps.Marker) {
+    const contentString = `
+    <div style="text-align: center">
+      <img src="https://via.placeholder.com/150" />
+      <br>
+      <p>content HERE!!</p>
+    </div>
+    `
+    
+    const infowindow = new google.maps.InfoWindow({
+      content: contentString,
+    }); 
+    
+    infowindow.open(map, marker)   
   }
   //#endregion
 
@@ -90,17 +148,23 @@ export class CustomMapComponent implements OnInit {
         const lng = result[0].geometry.location.lng();
         
         markers = [];
-        this.initMap({lat: lat, lng: lng})
+        this.initMap([{lat: lat, lng: lng}])
       })
     });
+  }
+
+  getAddress(latlang: any) {
+    const geocoder = new google.maps.Geocoder();
+    console.log(location)
+    geocoder.geocode({'location': latlang}, (result) => {
+      console.log(result)
+    })
   }
   //#endregion  
 
   //#region // drow polyline events
   startDrawFreePolyline() {
     isAddMarker = false;
-
-    removeAllMarkers(null);
 
     drawingManager.setDrawingMode(null);
 
@@ -127,9 +191,11 @@ export class CustomMapComponent implements OnInit {
     } else {
       google.maps.event.addListenerOnce(map, 'mousemove', (e) => {
         google.maps.event.removeListener(polylineMove);
-        const path = polyline.getPath(); 
+        const path = polyline.getPath();
+        showMarkersInside('poly', polyline);
       });
-      map.setOptions({draggableCursor: ''});
+
+      map.setOptions({draggableCursor: ''});      
     }
   }
   //#endregion
@@ -158,19 +224,16 @@ export class CustomMapComponent implements OnInit {
    
   }
 
-  rectangelListener(e: any) {
-    removeAllMarkers(null);
-    console.log(e)
+  rectangelListener(shape: any) {
+    showMarkersInside('', shape);
   }
 
-  polygonListener(e: any) {
-    removeAllMarkers(null);
-    console.log(e)
+  polygonListener(shape: any) {
+    showMarkersInside('poly', shape);
   }
 
-  circlelListener(e: any) {
-    removeAllMarkers(null);
-    console.log(e)
+  circlelListener(shape: any) {
+    showMarkersInside('', shape);
   }
 
   completeDrawingListener() {
@@ -179,22 +242,27 @@ export class CustomMapComponent implements OnInit {
      (e.type != google.maps.drawing.OverlayType.MARKER) && drawingManager.setDrawingMode(null);
     });     
   }
+
   //#endregion
 
   //#region // remove shapes
   removeShapes() {
-    drawingManager.setDrawingMode(null);
+    this.hideAllMarkers();
 
-    google.maps.event.removeListener(polylineListener);
-    (Boolean(polyline)) && polyline.setMap(null)
-    polyline = [];
+    isAddMarker = true;
+    isDrawing = false;
+
+    drawingManager.setDrawingMode(null);
 
     overlays.forEach((val, i) => overlays[i].overlay.setMap(null))
 
-    overlays = [];
+    overlays = [];    
 
+    google.maps.event.removeListener(polylineListener);
+    if (Boolean(polyline)) {
+      polyline.setMap(null);
+      polyline = [];
+    } 
   }
   //#endregion
-
-
 }
